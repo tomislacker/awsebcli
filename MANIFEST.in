@@ -1,0 +1,12 @@
+include versioneer.py
+recursive-include bundled/*
+recursive-include containers/*
+recursive-include controllers/*
+recursive-include core/*
+recursive-include display/*
+recursive-include labs/*
+recursive-include lib/*
+recursive-include objects/*
+recursive-include operations/*
+recursive-include resources/*
+include ebcli/_version.py

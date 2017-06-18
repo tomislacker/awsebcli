@@ -16,6 +16,7 @@ import datetime
 import fileinput
 import os
 import sys
+import zipfile
 
 from cement.utils.misc import minimal_logger
 from cement.utils.shell import exec_cmd
@@ -228,16 +229,28 @@ class Git(SourceControl):
             # must be in project root for git archive to work.
             fileoperations._traverse_to_project_root()
 
-            if staged:
-                commit_id, stderr, exitcode = self._run_cmd(
-                    ['git', 'write-tree'])
-            else:
-                commit_id = 'HEAD'
-            io.log_info('creating zip using git archive HEAD')
-            stdout, stderr, exitcode = self._run_cmd(
-                ['git', 'archive', '-v', '--format=zip',
-                 '-o', location, commit_id])
-            io.log_info('git archive output: ' + stderr)
+            # Read in the file manifest
+            with open("MANIFEST.in", "r") as manifest_in:
+                manifest = [f.strip() for f in manifest_in.readlines()]
+
+            with zipfile.ZipFile(location, "w", zipfile.ZIP_DEFLATED) as zip:
+                # Read through the manifest & add all files/dirs
+                for item in manifest:
+                    item_target = os.path.join(cwd, item)
+
+                    if os.path.isdir(item_target):
+                        for root, dirs, files in os.walk(item_target):
+                            for f in files:
+                                file_target = os.path.join(root, f)
+                                arc_name = os.path.join(
+                                    os.path.relpath(root, cwd),
+                                    f
+                                )
+                                zip.write(file_target, arc_name)
+                    else:
+                        # Assume a file type
+                        zip.write(item_target, item)
+
         finally:
             os.chdir(cwd)
 
